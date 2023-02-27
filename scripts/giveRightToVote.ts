@@ -14,15 +14,14 @@ function convertStringArrayToBytes32(array: string[]) {
 }
 
 async function main() {
-  PROPOSALS.forEach((element, index) => {
-    console.log(`Proposal N. ${index + 1}: ${element}`);
-  });
+  const args = process.argv;
 
+  const ballotAddress = args.slice(2, 3)[0];
+  const voters = args.slice(3);
   const provider = new ethers.providers.AlchemyProvider(
     "goerli",
     process.env.ALCHEMY_API_KEY
   );
-  console.log("provider", provider);
 
   const mnemonic = process.env.MNEMONIC;
 
@@ -36,13 +35,13 @@ async function main() {
   console.log("balance ", balance);
 
   const ballotContractFactory = new Ballot__factory(signer);
-  const ballotContract = await ballotContractFactory.deploy(
-    convertStringArrayToBytes32(PROPOSALS)
-  );
+  const ballotContract = await ballotContractFactory.attach(ballotAddress);
 
-  const transaction = await ballotContract.deployTransaction.wait();
-
-  console.log("transaction ", { transaction });
+  for (let idx = 0; idx < voters.length; idx++) {
+    const voterAddress = voters[idx];
+    const tx = await ballotContract.giveRightToVote(voterAddress);
+    console.log("tx for give voting", { tx });
+  }
 }
 
 // We recommend this pattern to be able to use async/await everywhere
